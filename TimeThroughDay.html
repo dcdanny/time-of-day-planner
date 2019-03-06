@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Daniel's Website</title>
+<link rel="stylesheet" type="text/css" href="/style.css">
+<link rel="shortcut icon" href="/lion_icon.ico">
+<link rel="apple-touch-startup-image" href="/startup.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+
+<style>
+body{background-color:#EEEEEE;}
+#nosel{
+-webkit-user-select: none;
+-moz-user-select: none;
+-ms-user-select: none;
+user-select: none;
+}
+table{
+font-size:40pt;
+max-width:600px;
+width:100%;
+}
+.btn{
+float:left;
+padding:10px;
+background:#FFFFFF;
+cursor:pointer;
+font-size:50%;
+}
+#progress{
+background-color:#479cfc;
+position:absolute;top:0px;
+width:100%;/*height:30%;*/
+color:#ffffff;
+}
+.scale{
+color:#EEEEEE;
+position:absolute;
+height:20px;white-space: nowrap
+}
+#scalebg{
+position:absolute;top:0px;
+background-color:rgba(0, 0, 0, 0.5);
+height:100%;
+width:50px;
+padding-left:5px;
+}
+.events{
+position:absolute;top:0px;
+background-color:rgba(255, 0, 0, 0.6);
+width:33%;height:80px;
+padding-right:15px;
+cursor:grab;
+cursor:-webkit-grab;
+cursor:-moz-grab;
+}
+.events:active{
+cursor:grabbing;
+cursor:-webkit-grabbing;
+cursor: -moz-grabbing;
+z-index:1;
+}
+.edit{
+width:100%;height:100%;
+/*float:left;*/
+cursor:auto;
+}
+.cross{
+height:auto;width:auto;
+position:absolute;top:0px;right:0px;
+padding-right:3px;
+cursor:pointer;
+/*float:right;*/
+}
+#eventarea{
+position:absolute;top:0px;left:55px;right:0px;
+/*width:100%;*/height:100%;
+}
+#new{
+margin:auto;
+margin-top:4px;
+/*width:90%;*/
+/*background-color:#EEEEEE;*/
+/*padding:2px;*/
+color:#FFFFFF;
+font-size:95%;
+cursor:pointer;
+}
+#new:hover{
+/*box-shadow:inset 0px 0px 7px #888888, 0px 0px 7px 2px #888888;*/
+box-shadow:inset 0px 0px 7px #FF4444, 0px 0px 7px 2px #FF4444;
+}
+.adjht{
+width:100%;
+height:15px;
+cursor:ns-resize;
+position:absolute;
+}
+</style>
+<script>
+
+//---------- SETTINGS ----------
+//tmz is the Number of hours ahead of GMT/UTC
+// Value of 1 for BST
+var tmz = 1;
+//----- END OF SETTINGS -----
+
+function init(){
+hrs = document.getElementById('hh');
+min = document.getElementById('mm');
+sec = document.getElementById('ss');
+window.eventnumber=0;readurl();
+window.addEventListener("resize", function(){rescale();}, false);
+window.setInterval(function(){countdown()}, 1000);
+}
+
+function countdown(){
+//x = time in seconds
+//ms = milliseconds passed since 00:00
+
+var ms = (new Date().getTime() % 86400000) + (tmz*3600000);
+var x = ms / 1000;
+
+//Create progress bar and scale
+document.getElementById('progress').style.height = (ms*window.innerHeight)/86400000 + 'px';
+for (i = 6; document.getElementById('t'+i); i++) {
+  document.getElementById('t'+i).style.top = ((i*36*window.innerHeight)/864)-10 + 'px';
+}
+
+//convert seconds to H:M:S
+	sec.innerHTML = twodigits(Math.floor(x % 60));
+	x /= 60;
+	min.innerHTML =  twodigits(Math.floor(x % 60));
+	x /= 60;
+	hrs.innerHTML = twodigits(Math.floor(x % 24));
+}
+
+function twodigits(n) {
+  return (n < 10 ? '0' : '') + n;
+}
+
+
+//--------------------------------------------------------------------------------------
+//window.onload = addListeners();
+var offX;
+var offY;
+function newevent(){
+  window.eventarea = document.getElementById("eventarea");
+  window.eventarea.innerHTML += '<div class="events" id="event'+ window.eventnumber +'" onmousedown="mouseDown(event)"><div class="edit" contenteditable="true" onchange="updateurl()" oninput="updateurl()"></div><div class="cross" onclick="delevent('+ window.eventnumber +');">x</div><div class="adjht" onmousedown="rszh(event,'+ window.eventnumber +');"></div></div>';
+  window.eventnumber++;
+  updateurl();
+}
+
+function delevent(n){
+  del = document.getElementById("event"+n);
+  del.parentElement.removeChild(del);
+if(n == window.eventnumber-1){window.eventnumber--;}
+  updateurl();
+}
+
+/*
+function addListeners(){
+    document.getElementById('dxy').addEventListener('mousedown', mouseDown, false);
+    window.addEventListener('mouseup', mouseUp, false);
+}
+*/
+
+function mouseUp(){
+  window.removeEventListener('mousemove', divMove, true);
+  document.body.id = '';
+  updateurl();
+}
+
+function mouseDown(e){
+  if(e.target.id){
+    window.eleselect = e.target;
+    window.addEventListener('mouseup', mouseUp, false);
+    offY= e.clientY-parseInt(e.target.offsetTop,10);
+    offX= e.clientX-parseInt(e.target.offsetLeft,10);
+    document.body.id = 'nosel';
+    window.addEventListener('mousemove', divMove, true);
+  }
+}
+
+function divMove(e){
+  div = window.eleselect;
+  y = (e.clientY-offY);
+  if(e.clientX-offX > 10){x = e.clientX-offX;}else{x = 0;}
+
+  div.style.left = x + 'px';
+  div.style.top = y + 'px';
+  div.dataset.px = x/window.innerWidth;
+  div.dataset.py = y/window.innerHeight;
+}
+
+function rszh(e,n){
+  window.eleselect = document.getElementById('event'+n);
+  window.addEventListener('mouseup', rszhStop, false);
+  offYh = e.clientY-parseInt(window.eleselect.offsetTop,10);
+  origh = e.clientY;
+  document.body.id = 'nosel';
+  window.addEventListener('mousemove', rszhCge, true);
+}
+function rszhCge(e){
+  div = window.eleselect;
+  div.style.height = (e.clientY-origh+offYh) + 'px';
+}
+function rszhStop(e){
+  window.removeEventListener('mousemove', rszhCge, true);
+  document.body.id = '';
+  updateurl();
+}
+
+function updateurl(){
+  if(window.eventarea.innerHTML.length<3){window.eventarea.innerHTML="";window.eventnumber=0;}
+  window.history.replaceState("html","TimeThroughday", window.location.pathname+"?"+window.eventnumber+"&"+encodeURIComponent(window.eventarea.innerHTML));
+}
+function readurl(){
+  urldata = window.location.search.substring(1).split("&");
+  if(urldata[1] != '' && urldata[1] !== undefined){
+    window.eventarea.innerHTML = decodeURIComponent(urldata[1]);
+  }
+ if(urldata[0] != '' && !isNaN(urldata[0])){
+    window.eventnumber = urldata[0];
+  }
+}
+
+function rescale(){
+for (i = 0; i < window.eventnumber; i++) {
+  if(document.getElementById('event'+i)){
+    element = document.getElementById('event'+i);
+    element.style.left = (element.dataset.px * window.innerWidth)+'px';
+    element.style.top = (element.dataset.py * window.innerHeight)+'px';
+  }
+}
+}
+//--------------------------------------------------------------------------------------
+</script>
+<body onload="init();countdown();">
+<div id="progress">
+
+<table class="center">
+<tr class="subheadtext center">
+	<td id="hh">0</td>
+	<td>:</td>
+	<td id="mm">0</td>
+	<td>:</td>
+	<td id="ss">0</td>
+</tr>
+</table>
+
+</div>
+
+<div id="scalebg">
+<div id="new" onclick="newevent();" style="position:absolute;">Create Event</div>
+  <div class="scale" id="t6">06:00 -</div>
+  <div class="scale" id="t7">07:00 -</div>
+  <div class="scale" id="t8">08:00 -</div>
+  <div class="scale" id="t9">09:00 -</div>
+  <div class="scale" id="t10">10:00 -</div>
+  <div class="scale" id="t11">11:00 -</div>
+  <div class="scale" id="t12">12:00 -</div>
+  <div class="scale" id="t13">13:00 -</div>
+  <div class="scale" id="t14">14:00 -</div>
+  <div class="scale" id="t15">15:00 -</div>
+  <div class="scale" id="t16">16:00 -</div>
+  <div class="scale" id="t17">17:00 -</div>
+  <div class="scale" id="t18">18:00 -</div>
+  <div class="scale" id="t19">19:00 -</div>
+  <div class="scale" id="t20">20:00 -</div>
+  <div class="scale" id="t21">21:00 -</div>
+  <div class="scale" id="t22">22:00 -</div>
+  <div class="scale" id="t23">23:00 -</div>
+</div>
+
+<div id="eventarea">
+</div>
+</body>
+</html>
